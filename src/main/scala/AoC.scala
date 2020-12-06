@@ -9,7 +9,8 @@ object AoC extends App {
   val day3FileName = "src/main/scala/trees.txt"
   val day4FileName = "src/main/scala/passports.txt"
   val day5FileName = "src/main/scala/plane.txt"
-  val bufferedSource = Source.fromFile(day5FileName)
+  val day6FileName = "src/main/scala/customs.txt"
+  val bufferedSource = Source.fromFile(day6FileName)
 
   val input = bufferedSource.getLines().toList
 
@@ -239,10 +240,30 @@ object AoC extends App {
     Seat(row, column)
   }
 
-  val knownTickets = input.map(ticket => getSeat(ticket).id)
-  println(allSeatIds.length)
+//  val knownTickets = input.map(ticket => getSeat(ticket).id)
+//  println(allSeatIds.length)
+//
+//  println(allSeatIds.filterNot(a => knownTickets.contains(a)).sorted)
 
-  println(allSeatIds.filterNot(a => knownTickets.contains(a)).sorted)
+  //day 6
+
+  println(
+    cleanInput(input)
+      .map(group => {
+        group.trim
+          .split(" ")
+          .foldLeft(List[List[Char]]())((a, b) => {
+            if (a.isEmpty) {
+              b.toCharArray.toList :: a
+            } else {
+              a.head.filter(c => b.toCharArray.contains(c)) :: a
+            }
+          })
+          .head
+          .length
+      })
+      .sum
+  )
 
   bufferedSource.close()
 }
