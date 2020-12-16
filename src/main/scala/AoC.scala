@@ -10,7 +10,8 @@ object AoC extends App {
   val day4FileName = "src/main/scala/passports.txt"
   val day5FileName = "src/main/scala/plane.txt"
   val day6FileName = "src/main/scala/customs.txt"
-  val bufferedSource = Source.fromFile(day6FileName)
+  val day7FileName = "src/main/scala/rules.txt"
+  val bufferedSource = Source.fromFile(day7FileName)
 
   val input = bufferedSource.getLines().toList
 
@@ -136,7 +137,7 @@ object AoC extends App {
 //  println(res)
 //  println(res.foldLeft(1L)(_ * _.toLong))
 
-  //day 4
+  //day 4dit
 
   def cleanInput(in: List[String]) =
     in.map(l => if (l == "") "|" else l)
@@ -247,23 +248,85 @@ object AoC extends App {
 
   //day 6
 
-  println(
-    cleanInput(input)
-      .map(group => {
-        group.trim
-          .split(" ")
-          .foldLeft(List[List[Char]]())((a, b) => {
-            if (a.isEmpty) {
-              b.toCharArray.toList :: a
-            } else {
-              a.head.filter(c => b.toCharArray.contains(c)) :: a
-            }
+//  println(
+//    cleanInput(input)
+//      .map(group => {
+//        group.trim
+//          .split(" ")
+//          .foldLeft(List[List[Char]]())((a, b) => {
+//            if (a.isEmpty) {
+//              b.toCharArray.toList :: a
+//            } else {
+//              a.head.filter(c => b.toCharArray.contains(c)) :: a
+//            }
+//          })
+//          .head
+//          .length
+//      })
+//      .sum
+//  )
+
+  // day 7
+
+  case class Rule(outer: String, contains: Map[String, Int])
+
+  def parseRule(in: String): Rule = {
+    val cleaned = in.split("contain").map(_.replace(".", "").trim()).toList
+    val outer = cleaned.head
+    val contains = cleaned.tail
+      .map(r => {
+        r.split(",")
+          .map(c => {
+            val amount = "\\d*".r findFirstIn c.trim
+            val bagType = "\\D+".r findFirstIn c.trim
+            (
+              bagType.get.trim,
+              if (amount.get.trim != "") amount.get.toInt
+              else 0
+            )
           })
-          .head
-          .length
+          .toMap
       })
-      .sum
-  )
+    Rule(outer, contains.head)
+  }
+
+  def colorContainsShinyGold(rule: Rule, rules: List[Rule]): Option[String] =
+    (rule.outer, rule.contains.keys.toList) match {
+      case (outer, _) if outer.contains("shiny gold") => None
+      case (outer, containingKeys)
+          if containingKeys.count(k => k.contains("shiny gold")) != 0 => {
+        Some(outer)
+      }
+      case (outer, containingKeys)
+          if containingKeys.count(k => k.contains("shiny gold")) == 0 => {
+        val rulesToCheck =
+          containingKeys.flatMap(
+            k => rules.filter(r => r.outer == k || r.outer == k + "s")
+          )
+        if (rulesToCheck.exists(
+              r => colorContainsShinyGold(r, rules).isDefined
+            )) Some(outer)
+        else None
+      }
+    }
+
+  def countIndividualBagsIn(color: String, rules: List[Rule]): Int = {
+    rules.find(r => r.outer.contains(color)) match {
+      case Some(rule) => {
+        rule.contains.map {
+          case (colorCode, amount) if amount != 0 =>
+            amount + (amount * countIndividualBagsIn(
+              colorCode,
+              rules.filterNot(_.outer.contains(color))
+            ))
+          case (_, amount) => amount
+        }
+      }.sum
+      case None => 0
+    }
+  }
+
+  println(countIndividualBagsIn("shiny gold", input.map(parseRule)))
 
   bufferedSource.close()
 }
